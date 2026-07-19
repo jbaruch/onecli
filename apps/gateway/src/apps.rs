@@ -1466,18 +1466,65 @@ pub(crate) async fn refresh_access_token(
             .map_err(|_| anyhow::anyhow!("{} env var not set", config.client_secret_env))?,
     };
 
-    let mut req = reqwest::Client::new().post(config.token_url);
+    do_token_refresh(
+        config.token_url,
+        &client_id,
+        &client_secret,
+        refresh_token,
+        config.body_format,
+        config.client_auth,
+    )
+    .await
+}
 
-    if matches!(config.client_auth, ClientCredentialMethod::BasicAuth) {
+/// Refresh a custom-OAuth app (#365) whose token endpoint is supplied at
+/// runtime instead of by a compiled-in `RefreshConfig`. Uses the OAuth 2.0
+/// standard shape — form-encoded body, client credentials in the body — which
+/// covers the common case; providers needing Basic-auth or JSON bodies are the
+/// ones already worth a first-class `AppProvider` entry.
+///
+/// `token_url` MUST already have passed [`validate_public_https_url`]; this
+/// function does not re-validate, so callers must guard it before invoking.
+pub(crate) async fn refresh_access_token_dynamic(
+    token_url: &str,
+    refresh_token: &str,
+    client_id: &str,
+    client_secret: &str,
+) -> anyhow::Result<(String, i64, Option<String>)> {
+    do_token_refresh(
+        token_url,
+        client_id,
+        client_secret,
+        refresh_token,
+        TokenBodyFormat::Form,
+        ClientCredentialMethod::Body,
+    )
+    .await
+}
+
+/// Issue the `grant_type=refresh_token` POST and parse the token response.
+/// Shared by the static (`refresh_access_token`) and dynamic
+/// (`refresh_access_token_dynamic`) refresh paths.
+async fn do_token_refresh(
+    token_url: &str,
+    client_id: &str,
+    client_secret: &str,
+    refresh_token: &str,
+    body_format: TokenBodyFormat,
+    client_auth: ClientCredentialMethod,
+) -> anyhow::Result<(String, i64, Option<String>)> {
+    let mut req = reqwest::Client::new().post(token_url);
+
+    if matches!(client_auth, ClientCredentialMethod::BasicAuth) {
         let b64 = base64::engine::general_purpose::STANDARD;
         let encoded = b64.encode(format!("{client_id}:{client_secret}"));
         req = req.header("authorization", format!("Basic {encoded}"));
     }
 
-    let req = match (&config.body_format, &config.client_auth) {
+    let req = match (body_format, client_auth) {
         (TokenBodyFormat::Form, ClientCredentialMethod::Body) => req.form(&[
-            ("client_id", client_id.as_str()),
-            ("client_secret", client_secret.as_str()),
+            ("client_id", client_id),
+            ("client_secret", client_secret),
             ("refresh_token", refresh_token),
             ("grant_type", "refresh_token"),
         ]),
@@ -1536,6 +1583,60 @@ pub(crate) async fn refresh_access_token(
         .as_secs() as i64;
 
     Ok((access_token, now + expires_in, new_refresh_token))
+}
+
+/// Connect-time SSRF guard for a user-supplied custom-OAuth endpoint URL.
+///
+/// The TS layer (`custom-oauth-ssrf.ts`) rejects the obvious cases at config
+/// time, but the gateway is what actually connects to the token URL with the
+/// client secret + refresh token attached, so it re-checks before every use —
+/// a hostname that resolves to a private address is only catchable here.
+/// Requires https and rejects loopback / private / link-local / internal hosts.
+pub(crate) fn validate_public_https_url(raw: &str) -> anyhow::Result<()> {
+    let url = reqwest::Url::parse(raw).map_err(|e| anyhow::anyhow!("invalid URL: {e}"))?;
+    if url.scheme() != "https" {
+        anyhow::bail!("custom-oauth endpoint must use https");
+    }
+    let host = url
+        .host_str()
+        .ok_or_else(|| anyhow::anyhow!("custom-oauth endpoint has no host"))?;
+    validate_public_host(host)
+}
+
+/// Reject a host that must never be a custom-OAuth target: loopback, RFC1918 /
+/// link-local (incl. cloud metadata), or an internal-only name.
+pub(crate) fn validate_public_host(host: &str) -> anyhow::Result<()> {
+    let bare = host.trim_start_matches('[').trim_end_matches(']');
+    if let Ok(ip) = bare.parse::<std::net::IpAddr>() {
+        let blocked = match ip {
+            std::net::IpAddr::V4(v4) => {
+                v4.is_private()
+                    || v4.is_loopback()
+                    || v4.is_link_local()
+                    || v4.is_unspecified()
+                    || v4.octets()[0] == 0
+            }
+            std::net::IpAddr::V6(v6) => {
+                v6.is_loopback()
+                    || v6.is_unspecified()
+                    || (v6.segments()[0] & 0xfe00) == 0xfc00 // unique-local fc00::/7
+                    || (v6.segments()[0] & 0xffc0) == 0xfe80 // link-local fe80::/10
+            }
+        };
+        if blocked {
+            anyhow::bail!("custom-oauth host {host} is a private or link-local address");
+        }
+        return Ok(());
+    }
+    let lower = bare.to_ascii_lowercase();
+    if lower == "localhost"
+        || lower.ends_with(".localhost")
+        || lower.ends_with(".internal")
+        || lower.ends_with(".local")
+    {
+        anyhow::bail!("custom-oauth host {host} is an internal name");
+    }
+    Ok(())
 }
 
 #[derive(serde::Serialize)]
@@ -3050,5 +3151,39 @@ mod tests {
     #[test]
     fn normalize_host_empty() {
         assert_eq!(normalize_host(""), "");
+    }
+
+    #[test]
+    fn validate_public_https_url_accepts_public_https() {
+        assert!(validate_public_https_url("https://api.trakt.tv/oauth/token").is_ok());
+    }
+
+    #[test]
+    fn validate_public_https_url_rejects_non_https() {
+        assert!(validate_public_https_url("http://api.trakt.tv/oauth/token").is_err());
+    }
+
+    #[test]
+    fn validate_public_https_url_rejects_metadata_and_private() {
+        assert!(validate_public_https_url("https://169.254.169.254/token").is_err());
+        assert!(validate_public_https_url("https://10.0.0.5/token").is_err());
+        assert!(validate_public_https_url("https://192.168.1.1/token").is_err());
+        assert!(validate_public_https_url("https://127.0.0.1/token").is_err());
+    }
+
+    #[test]
+    fn validate_public_host_rejects_internal_names_and_ipv6() {
+        assert!(validate_public_host("localhost").is_err());
+        assert!(validate_public_host("vault.internal").is_err());
+        assert!(validate_public_host("printer.local").is_err());
+        assert!(validate_public_host("::1").is_err());
+        assert!(validate_public_host("[fd00::1]").is_err());
+        assert!(validate_public_host("fe80::1").is_err());
+    }
+
+    #[test]
+    fn validate_public_host_accepts_public() {
+        assert!(validate_public_host("api.trakt.tv").is_ok());
+        assert!(validate_public_host("140.82.112.3").is_ok());
     }
 }

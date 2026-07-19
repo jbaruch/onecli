@@ -1015,6 +1015,50 @@ impl PolicyEngine {
                                 debug!(provider = %provider, error = ?e, "token refresh failed");
                             }
                         }
+                    } else if let Some(token_url) = creds.get("token_url").and_then(|v| v.as_str())
+                    {
+                        // Custom OAuth (#365): no compiled-in RefreshConfig — the
+                        // token endpoint is stored on the connection. Guard the
+                        // stored URL (a hostname resolving private is only
+                        // catchable here) and resolve client creds via BYOC.
+                        if let Err(e) = apps::validate_public_https_url(token_url) {
+                            warn!(provider = %provider, error = %e, "custom-oauth refresh: unsafe token_url");
+                        } else if let Some((client_id, client_secret)) = self
+                            .resolve_byoc_credentials(project_id, provider, connection_id)
+                            .await
+                        {
+                            match apps::refresh_access_token_dynamic(
+                                token_url,
+                                refresh_token,
+                                &client_id,
+                                &client_secret,
+                            )
+                            .await
+                            {
+                                Ok((new_token, new_expires_at, new_refresh_token)) => {
+                                    debug!(provider = %provider, "refreshed expired custom-oauth token");
+                                    token = Some(new_token.clone());
+                                    effective_expires_at = Some(new_expires_at);
+
+                                    creds["access_token"] = serde_json::Value::String(new_token);
+                                    creds["expires_at"] = serde_json::json!(new_expires_at);
+                                    if let Some(new_rt) = new_refresh_token {
+                                        creds["refresh_token"] = serde_json::Value::String(new_rt);
+                                    }
+                                    self.persist_refreshed_credentials(
+                                        connection_id,
+                                        provider,
+                                        &creds,
+                                    )
+                                    .await;
+                                }
+                                Err(e) => {
+                                    debug!(provider = %provider, error = ?e, "custom-oauth token refresh failed");
+                                }
+                            }
+                        } else {
+                            debug!(provider = %provider, "custom-oauth refresh: no client credentials configured");
+                        }
                     }
                 }
             }
