@@ -15,6 +15,12 @@ use crate::util::parse_jwt_exp;
 /// connection instead of a compiled-in rule.
 pub(crate) const CUSTOM_OAUTH_PROVIDER: &str = "custom-oauth";
 
+/// Browser-like User-Agent for token requests. Some providers front their token
+/// endpoint with a WAF (e.g. Cloudflare on api.trakt.tv) that 403s non-browser
+/// User-Agents; sending one keeps the refresh from being blocked.
+const TOKEN_REQUEST_USER_AGENT: &str =
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 // ── Host rule ──────────────────────────────────────────────────────────
 
 /// Auth injection strategy for a specific host.
@@ -1533,7 +1539,9 @@ async fn do_token_refresh(
     body_format: TokenBodyFormat,
     client_auth: ClientCredentialMethod,
 ) -> anyhow::Result<(String, i64, Option<String>)> {
-    let mut req = reqwest::Client::new().post(token_url);
+    let mut req = reqwest::Client::new()
+        .post(token_url)
+        .header("user-agent", TOKEN_REQUEST_USER_AGENT);
 
     if matches!(client_auth, ClientCredentialMethod::BasicAuth) {
         let b64 = base64::engine::general_purpose::STANDARD;

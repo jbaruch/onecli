@@ -33,6 +33,12 @@ function splitScopes(raw: string | undefined): string[] {
   return (raw ?? "").split(/[\s,]+/).filter(Boolean);
 }
 
+// Some OAuth providers front their token endpoint with a WAF (e.g. Cloudflare
+// on api.trakt.tv) that 403s requests without a browser-like User-Agent. Send
+// one on the server-side token exchange so it isn't blocked.
+const TOKEN_REQUEST_USER_AGENT =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
 export const customOauth: AppDefinition = {
   id: "custom-oauth",
   name: "Custom OAuth",
@@ -96,6 +102,7 @@ export const customOauth: AppDefinition = {
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
           Accept: "application/json",
+          "User-Agent": TOKEN_REQUEST_USER_AGENT,
         },
         body: new URLSearchParams({
           grant_type: "authorization_code",
