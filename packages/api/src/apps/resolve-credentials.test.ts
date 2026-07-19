@@ -204,4 +204,72 @@ describe("resolveAppCredentials — project → org → env", () => {
       expect(resolved?.source).toBe("env");
     });
   });
+
+  describe("optional fields", () => {
+    // A scope-less provider (e.g. Trakt): `scopes` is optional and may be blank.
+    const appWithOptional: AppDefinition = {
+      ...app,
+      configurable: {
+        fields: [
+          ...app.configurable!.fields,
+          {
+            name: "scopes",
+            label: "Scopes",
+            placeholder: "read write",
+            optional: true,
+          },
+        ],
+      },
+    };
+
+    it("resolves when only the optional field is absent", async () => {
+      store.projectRow = {
+        id: "proj-cfg",
+        settings: { clientId: "p-id", clientSecret: "p-secret" }, // no scopes
+        credentials: null,
+        enabled: true,
+      };
+      const resolved = await resolveAppCredentials(
+        PROJECT,
+        appWithOptional,
+        ORG,
+      );
+      expect(resolved?.values).toEqual({
+        clientId: "p-id",
+        clientSecret: "p-secret",
+      });
+      expect(resolved?.source).toBe("app_config");
+    });
+
+    it("passes the optional field through when present", async () => {
+      store.projectRow = {
+        id: "proj-cfg",
+        settings: {
+          clientId: "p-id",
+          clientSecret: "p-secret",
+          scopes: "read",
+        },
+        credentials: null,
+        enabled: true,
+      };
+      const resolved = await resolveAppCredentials(
+        PROJECT,
+        appWithOptional,
+        ORG,
+      );
+      expect(resolved?.values.scopes).toBe("read");
+    });
+
+    it("still requires the non-optional fields", async () => {
+      store.projectRow = {
+        id: "proj-cfg",
+        settings: { clientId: "p-id" }, // clientSecret (required) missing
+        credentials: null,
+        enabled: true,
+      };
+      expect(
+        await resolveAppCredentials(PROJECT, appWithOptional, ORG),
+      ).toBeNull();
+    });
+  });
 });

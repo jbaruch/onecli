@@ -102,6 +102,9 @@ export interface OAuthConfigField {
   placeholder: string;
   /** If true, stored encrypted in AppConfig.credentials. Otherwise in AppConfig.settings. */
   secret?: boolean;
+  /** If true, the field may be blank and credential resolution still succeeds
+   *  (e.g. scopes for a scope-less OAuth provider). */
+  optional?: boolean;
 }
 
 export interface AppDefinition {

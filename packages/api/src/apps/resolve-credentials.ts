@@ -30,12 +30,20 @@ export const resolveAppCredentials = async (
 ): Promise<ResolvedAppCredentials | null> => {
   if (!app.configurable) return null;
 
-  const requiredFields = app.configurable.fields.map((f) => f.name);
+  // Only non-optional fields gate resolution; optional fields (e.g. scopes for a
+  // scope-less OAuth provider) are passed through when present but never
+  // required for a config to count as complete.
+  const allFields = app.configurable.fields.map((f) => f.name);
+  const requiredFields = app.configurable.fields
+    .filter((f) => !f.optional)
+    .map((f) => f.name);
 
   const config = await getAppConfigCredentials({ projectId }, app.id);
   if (config && requiredFields.every((f) => !!config.fields[f])) {
     const values: Record<string, string> = {};
-    for (const f of requiredFields) values[f] = config.fields[f]!;
+    for (const f of allFields) {
+      if (config.fields[f]) values[f] = config.fields[f]!;
+    }
     return { values, source: "app_config", appConfigId: config.appConfigId };
   }
 
@@ -53,6 +61,14 @@ export const resolveAppCredentials = async (
     const value = process.env[envVar];
     if (!value) return null;
     values[field] = value;
+  }
+  // Optional fields ride along from env when a default is set, but their
+  // absence never fails resolution.
+  for (const field of allFields) {
+    if (values[field]) continue;
+    const envVar = envDefaults[field];
+    const value = envVar ? process.env[envVar] : undefined;
+    if (value) values[field] = value;
   }
 
   return { values, source: "env" };

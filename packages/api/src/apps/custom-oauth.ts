@@ -174,8 +174,10 @@ export const customOauth: AppDefinition = {
       {
         name: "scopes",
         label: "Scopes",
-        description: "Space-separated OAuth scopes to request.",
+        description:
+          "Space-separated OAuth scopes to request. Leave blank for scope-less providers (e.g. Trakt).",
         placeholder: "read write",
+        optional: true,
       },
       {
         name: "clientId",
