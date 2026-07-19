@@ -416,12 +416,12 @@ impl PolicyEngine {
         hostname: &str,
     ) -> Result<Vec<db::AppConnectionRow>, ConnectError> {
         let providers = apps::providers_for_host(hostname);
-        if providers.is_empty() {
-            debug!(host = %hostname, "app_connections: no provider for host");
-            return Ok(vec![]);
-        }
         debug!(host = %hostname, providers = ?providers, "app_connections: matched providers");
 
+        // Connections are fetched even when no static provider matches, because a
+        // custom-OAuth connection's API host is dynamic (not in the registry) and
+        // can only be matched against the request host here. This whole result is
+        // cached per (agent_token, host), so the fetch runs once per host per TTL.
         let connections = if agent.secret_mode == SECRET_MODE_SELECTIVE {
             db::find_app_connections_by_agent(&self.pool, &agent.id)
                 .await
@@ -438,7 +438,11 @@ impl PolicyEngine {
 
         let matching: Vec<db::AppConnectionRow> = connections
             .into_iter()
-            .filter(|c| providers.contains(&c.provider.as_str()))
+            .filter(|c| {
+                providers.contains(&c.provider.as_str())
+                    || (c.provider == apps::CUSTOM_OAUTH_PROVIDER
+                        && custom_oauth_api_host_matches(c, hostname))
+            })
             .collect();
 
         debug!(host = %hostname, count = matching.len(), "app_connections: deferred connections");
@@ -1354,6 +1358,20 @@ fn credential_host_mismatch(
     stored.is_empty() || apps::normalize_host(hostname) != stored
 }
 
+/// Whether a custom-OAuth connection (#365) should inject on this request host.
+///
+/// Its API host is user-supplied, not in the provider registry, and is stored
+/// non-secret in `metadata.apiHost` — so the match is exact (case-insensitive)
+/// against the request host with no decryption. A connection only injects on the
+/// exact host it was configured for; the token can never leak to another host.
+fn custom_oauth_api_host_matches(conn: &db::AppConnectionRow, hostname: &str) -> bool {
+    conn.metadata
+        .as_ref()
+        .and_then(|m| m.get("apiHost"))
+        .and_then(|v| v.as_str())
+        .is_some_and(|stored| apps::normalize_host(stored) == apps::normalize_host(hostname))
+}
+
 /// Check if a requested hostname matches a secret or policy host pattern.
 ///
 /// Supports an exact match, or a single `*` wildcard anywhere in the pattern:
@@ -2140,6 +2158,24 @@ mod tests {
 
     fn ids(conns: &[db::AppConnectionRow]) -> Vec<&str> {
         conns.iter().map(|c| c.id.as_str()).collect()
+    }
+
+    #[test]
+    fn custom_oauth_api_host_matches_exact_host() {
+        let mut c = conn("c1", apps::CUSTOM_OAUTH_PROVIDER);
+        c.metadata = Some(serde_json::json!({ "apiHost": "api.trakt.tv" }));
+        assert!(custom_oauth_api_host_matches(&c, "api.trakt.tv"));
+        // Case-insensitive, host-normalized.
+        assert!(custom_oauth_api_host_matches(&c, "API.TRAKT.TV"));
+        // Different host must not match — no token leak to another host.
+        assert!(!custom_oauth_api_host_matches(&c, "api.themoviedb.org"));
+        assert!(!custom_oauth_api_host_matches(&c, "evil.trakt.tv"));
+    }
+
+    #[test]
+    fn custom_oauth_api_host_no_match_without_metadata() {
+        let c = conn("c1", apps::CUSTOM_OAUTH_PROVIDER);
+        assert!(!custom_oauth_api_host_matches(&c, "api.trakt.tv"));
     }
 
     #[test]

@@ -9,6 +9,12 @@ use base64::Engine;
 use crate::inject::Injection;
 use crate::util::parse_jwt_exp;
 
+/// Provider slug for the generic custom-OAuth app (#365). Unlike catalogued
+/// providers it has no `AppProvider` registry entry: its token endpoint and API
+/// host are supplied per-connection, so refresh and injection read them off the
+/// connection instead of a compiled-in rule.
+pub(crate) const CUSTOM_OAUTH_PROVIDER: &str = "custom-oauth";
+
 // ── Host rule ──────────────────────────────────────────────────────────
 
 /// Auth injection strategy for a specific host.
@@ -1273,6 +1279,17 @@ pub(crate) fn build_app_injection_rules(
     hostname: &str,
     token: &str,
 ) -> Vec<(String, Vec<Injection>)> {
+    // Custom OAuth (#365) has no compiled-in AppProvider — it injects a standard
+    // Bearer on every path of its (already host-matched) connection.
+    if provider == CUSTOM_OAUTH_PROVIDER {
+        return vec![(
+            "*".to_string(),
+            vec![Injection::SetHeader {
+                name: "authorization".to_string(),
+                value: format!("Bearer {token}"),
+            }],
+        )];
+    }
     let Some(app) = all_providers().find(|p| p.provider == provider) else {
         return vec![];
     };
@@ -1377,6 +1394,9 @@ pub(crate) fn rewrite_host(
 /// Returns true if the provider has any host rule that injects an Authorization header.
 /// Providers using only credential_headers (e.g., Datadog) return false.
 pub(crate) fn needs_access_token(provider: &str) -> bool {
+    if provider == CUSTOM_OAUTH_PROVIDER {
+        return true;
+    }
     all_providers()
         .find(|p| p.provider == provider)
         .map(|p| {
@@ -3185,5 +3205,26 @@ mod tests {
     fn validate_public_host_accepts_public() {
         assert!(validate_public_host("api.trakt.tv").is_ok());
         assert!(validate_public_host("140.82.112.3").is_ok());
+    }
+
+    #[test]
+    fn custom_oauth_needs_access_token() {
+        assert!(needs_access_token(CUSTOM_OAUTH_PROVIDER));
+    }
+
+    #[test]
+    fn custom_oauth_injects_bearer_on_all_paths() {
+        let rules = build_app_injection_rules(CUSTOM_OAUTH_PROVIDER, "api.trakt.tv", "tok-123");
+        assert_eq!(rules.len(), 1);
+        let (pattern, injections) = &rules[0];
+        assert_eq!(pattern, "*");
+        assert_eq!(injections.len(), 1);
+        match &injections[0] {
+            Injection::SetHeader { name, value } => {
+                assert_eq!(name, "authorization");
+                assert_eq!(value, "Bearer tok-123");
+            }
+            other => panic!("expected SetHeader, got {other:?}"),
+        }
     }
 }
