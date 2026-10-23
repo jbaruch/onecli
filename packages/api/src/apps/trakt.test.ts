@@ -43,7 +43,6 @@ describe("Trakt credential import", () => {
         expires_at: 0,
         client_id: "fixture-client",
         api_version: "2",
-        user_agent: TRAKT_USER_AGENT,
       },
       scopes: [],
       metadata: { username: "fixture-user" },
@@ -108,5 +107,41 @@ describe("Trakt credential import", () => {
     await expect(method.exchangeCredentials(fields)).rejects.toThrow(
       "Trakt returned an unreadable profile; reconnect later.",
     );
+  });
+
+  it.each([
+    new TypeError("private-transport-detail"),
+    new DOMException("private-timeout-detail", "TimeoutError"),
+    new DOMException("private-abort-detail", "AbortError"),
+  ])(
+    "gives actionable network recovery without reflecting private errors",
+    async (error) => {
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(error));
+      await expect(method.exchangeCredentials(fields)).rejects.toThrow(
+        "Cannot reach Trakt to validate this connection. Check network access and retry; the refresh token was not used.",
+      );
+    },
+  );
+
+  it.each([
+    new TypeError("private-body-transport-detail"),
+    new DOMException("private-body-timeout-detail", "TimeoutError"),
+  ])("reports recovery when reading the response body fails", async (error) => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: vi.fn().mockRejectedValue(error),
+      }),
+    );
+    await expect(method.exchangeCredentials(fields)).rejects.toThrow(
+      "Cannot reach Trakt to validate this connection. Check network access and retry; the refresh token was not used.",
+    );
+  });
+
+  it("preserves an unexpected connector defect", async () => {
+    const defect = new RangeError("fixture-defect");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(defect));
+    await expect(method.exchangeCredentials(fields)).rejects.toBe(defect);
   });
 });

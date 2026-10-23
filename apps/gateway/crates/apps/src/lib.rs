@@ -607,10 +607,6 @@ static APP_PROVIDERS: &[AppProvider] = &[
                 credential_field: "api_version",
                 header_name: "trakt-api-version",
             },
-            CredentialHeader {
-                credential_field: "user_agent",
-                header_name: "user-agent",
-            },
         ],
         credential_params: &[],
         host_rewrite: None,

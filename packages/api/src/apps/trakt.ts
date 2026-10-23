@@ -64,29 +64,40 @@ export const trakt: AppDefinition = {
       const refreshToken = requiredCredential(fields, "refreshToken");
       // Validate the existing bearer without spending its single-use refresh
       // token. The gateway owns the first refresh after this import is stored.
-      const response = await fetch("https://api.trakt.tv/users/settings", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "trakt-api-key": clientId,
-          "trakt-api-version": "2",
-          "User-Agent": TRAKT_USER_AGENT,
-        },
-        signal: AbortSignal.timeout(10_000),
-        redirect: "error",
-      });
-      if (!response.ok) {
-        throw new Error(
-          `Trakt connection validation failed (HTTP ${response.status}); check the existing access token and client ID.`,
-        );
-      }
       let profile: unknown;
       try {
+        const response = await fetch("https://api.trakt.tv/users/settings", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "trakt-api-key": clientId,
+            "trakt-api-version": "2",
+            "User-Agent": TRAKT_USER_AGENT,
+          },
+          signal: AbortSignal.timeout(10_000),
+          redirect: "error",
+        });
+        if (!response.ok) {
+          throw new Error(
+            `Trakt connection validation failed (HTTP ${response.status}); check the existing access token and client ID.`,
+          );
+        }
         profile = await response.json();
       } catch (error) {
-        if (!(error instanceof SyntaxError)) throw error;
-        throw new Error(
-          "Trakt returned an unreadable profile; reconnect later.",
-        );
+        if (
+          error instanceof TypeError ||
+          (error instanceof DOMException &&
+            (error.name === "TimeoutError" || error.name === "AbortError"))
+        ) {
+          throw new Error(
+            "Cannot reach Trakt to validate this connection. Check network access and retry; the refresh token was not used.",
+          );
+        }
+        if (error instanceof SyntaxError) {
+          throw new Error(
+            "Trakt returned an unreadable profile; reconnect later.",
+          );
+        }
+        throw error;
       }
       if (
         !profile ||
@@ -113,7 +124,6 @@ export const trakt: AppDefinition = {
           expires_at: 0,
           client_id: clientId,
           api_version: "2",
-          user_agent: TRAKT_USER_AGENT,
         },
         scopes: [],
         metadata: { username: profile.user.username },
