@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.14.0+trakt.1 — 2026-10-23
+
+### Features
+
+- Import an existing Trakt OAuth session and renew its rotating token pair through the native gateway. Account validation is read-only; network failures include retry guidance. Trakt API credentials remain confined to its API host. Token exchanges refuse redirects, and the OAuth user-agent override is provider-owned rather than persisted per connection.
+
 ## [2.14.0](https://github.com/onecli/onecli/compare/v2.13.0...v2.14.0) (2026-10-14)
 
 

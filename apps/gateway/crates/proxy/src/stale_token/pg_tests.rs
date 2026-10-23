@@ -161,6 +161,7 @@ fn salesforce_config(token_url: &'static str) -> &'static apps::RefreshConfig {
         body_format: apps::TokenBodyFormat::Form,
         client_auth: apps::ClientCredentialMethod::Body,
         max_lifetime_secs: real.max_lifetime_secs,
+        user_agent: None,
         stale_token_error_codes: real.stale_token_error_codes,
     }))
 }

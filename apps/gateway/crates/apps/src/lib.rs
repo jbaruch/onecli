@@ -94,6 +94,8 @@ pub enum TokenBodyFormat {
     Form,
     /// `application/json` (required by Atlassian).
     Json,
+    /// Trakt JSON includes the connection's registered redirect URI.
+    TraktJson,
 }
 
 /// How client credentials are sent during token refresh.
@@ -133,6 +135,8 @@ pub struct RefreshConfig {
     /// as short as 15 minutes), so the expiry-driven refresh renews them
     /// first. `None` trusts the report.
     pub max_lifetime_secs: Option<i64>,
+    /// Optional provider-specific user agent for token exchanges.
+    pub user_agent: Option<&'static str>,
     /// `errorCode`s in a 401 body that mean the provider refused the ACCESS
     /// token it was sent (expired, or ended early), so a refresh may fix it.
     /// Matched against a JSON body that is an object or an array of objects
@@ -254,6 +258,7 @@ static ATLASSIAN_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Json,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -266,6 +271,7 @@ static TODOIST_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -278,6 +284,7 @@ static GOOGLE_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -290,6 +297,7 @@ static SUPABASE_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::BasicAuth,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -302,6 +310,7 @@ static GITLAB_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -314,6 +323,7 @@ static NOTION_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Json,
     client_auth: ClientCredentialMethod::BasicAuth,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -326,6 +336,7 @@ static DROPBOX_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -338,6 +349,7 @@ static LINKEDIN_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -350,6 +362,7 @@ static SENTRY_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -362,6 +375,7 @@ static ZOOM_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::BasicAuth,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -374,6 +388,7 @@ static MICROSOFT_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -386,6 +401,7 @@ static LINEAR_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -398,6 +414,7 @@ static FATHOM_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -410,6 +427,7 @@ static X_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::BasicAuth,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -422,6 +440,7 @@ static HUBSPOT_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -435,6 +454,7 @@ static ZOHO_CRM_REFRESH: RefreshConfig = RefreshConfig {
     body_format: TokenBodyFormat::Form,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
+    user_agent: None,
     stale_token_error_codes: &[],
 };
 
@@ -453,6 +473,7 @@ static SALESFORCE_REFRESH: RefreshConfig = RefreshConfig {
     // the one-hour default applied), the org's session timeout ends the token,
     // after as little as 15 minutes.
     max_lifetime_secs: Some(SALESFORCE_MAX_TOKEN_LIFETIME_SECS),
+    user_agent: None,
     // A token Salesforce ended early (session timeout, an admin revoking
     // sessions, a password reset): `INVALID_SESSION_ID` for an opaque token,
     // `INVALID_AUTH_HEADER` (message `INVALID_JWT_FORMAT`) for a JWT-based
@@ -549,7 +570,51 @@ const fn bearer_host(host: &'static str) -> HostRule {
 
 // ── Provider registry ──────────────────────────────────────────────────
 
+// Trakt's edge rejects bare HTTP clients on OAuth endpoints. Renewal owner:
+// OneCLI Trakt maintainer; check Chromium Stable monthly and verify refresh.
+// Keep aligned with packages/api/src/apps/trakt.ts.
+const TRAKT_USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36";
+
+static TRAKT_REFRESH: RefreshConfig = RefreshConfig {
+    token_url: "https://api.trakt.tv/oauth/token",
+    alternate_token_urls: &[],
+    client_id_env: "TRAKT_CLIENT_ID",
+    client_secret_env: "TRAKT_CLIENT_SECRET",
+    body_format: TokenBodyFormat::TraktJson,
+    client_auth: ClientCredentialMethod::Body,
+    max_lifetime_secs: None,
+    user_agent: Some(TRAKT_USER_AGENT),
+    stale_token_error_codes: &[],
+};
+
 static APP_PROVIDERS: &[AppProvider] = &[
+    AppProvider {
+        provider: "trakt",
+        display_name: "Trakt",
+        host_rules: &[HostRule {
+            pattern: HostPattern::Exact("api.trakt.tv"),
+            path_prefix: None,
+            strategy: AuthStrategy::Bearer,
+            intercept: false,
+            credential_host_field: None,
+        }],
+        refresh: Some(&TRAKT_REFRESH),
+        metadata_headers: &[],
+        credential_headers: &[
+            CredentialHeader {
+                credential_field: "client_id",
+                header_name: "trakt-api-key",
+            },
+            CredentialHeader {
+                credential_field: "api_version",
+                header_name: "trakt-api-version",
+            },
+        ],
+        credential_params: &[],
+        host_rewrite: None,
+        finalizer: None,
+        body_transform: None,
+    },
     AppProvider {
         provider: "salesforce",
         display_name: "Salesforce",
@@ -2966,6 +3031,74 @@ impl std::fmt::Display for RefreshRevoked {
 
 impl std::error::Error for RefreshRevoked {}
 
+fn refresh_request(
+    config: &RefreshConfig,
+    refresh_token: &str,
+    client_id: &str,
+    client_secret: &str,
+    stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
+) -> anyhow::Result<reqwest::RequestBuilder> {
+    // A redirect must not carry a client secret or rotating refresh token to
+    // a different endpoint, including a same-origin path the registry did not select.
+    let client = reqwest::Client::builder()
+        .redirect(reqwest::redirect::Policy::none())
+        .build()?;
+    let mut req = client
+        .post(config.endpoint_for(stored_token_url))
+        .timeout(REFRESH_REQUEST_TIMEOUT);
+
+    if let Some(user_agent) = config.user_agent {
+        req = req.header(reqwest::header::USER_AGENT, user_agent);
+    }
+
+    if matches!(config.client_auth, ClientCredentialMethod::BasicAuth) {
+        let b64 = base64::engine::general_purpose::STANDARD;
+        let encoded = b64.encode(format!("{client_id}:{client_secret}"));
+        req = req.header("authorization", format!("Basic {encoded}"));
+    }
+
+    Ok(match (&config.body_format, &config.client_auth) {
+        (TokenBodyFormat::Form, ClientCredentialMethod::Body) => req.form(&[
+            ("client_id", client_id),
+            ("client_secret", client_secret),
+            ("refresh_token", refresh_token),
+            ("grant_type", "refresh_token"),
+        ]),
+        (TokenBodyFormat::Json, ClientCredentialMethod::Body) => req.json(&serde_json::json!({
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "refresh_token": refresh_token,
+            "grant_type": "refresh_token",
+        })),
+        (TokenBodyFormat::TraktJson, ClientCredentialMethod::Body) => {
+            let redirect_uri = stored_redirect_uri.filter(|uri| !uri.is_empty()).ok_or_else(|| {
+                anyhow::anyhow!("Trakt connection lacks its registered redirect URI; reconnect it in OneCLI before refreshing")
+            })?;
+            req.json(&serde_json::json!({
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+                "redirect_uri": redirect_uri,
+            }))
+        }
+        (TokenBodyFormat::TraktJson, ClientCredentialMethod::BasicAuth) => {
+            anyhow::bail!("Trakt refresh requires body client authentication")
+        }
+        (TokenBodyFormat::Form, ClientCredentialMethod::BasicAuth) => req.form(&[
+            ("refresh_token", refresh_token),
+            ("grant_type", "refresh_token"),
+        ]),
+        (TokenBodyFormat::Json, ClientCredentialMethod::BasicAuth) => {
+            req.json(&serde_json::json!({
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+            }))
+        }
+    })
+}
+
 /// Refresh an expired access token using the provider's token endpoint.
 /// Returns (new_access_token, expires_at, optional_new_refresh_token).
 ///
@@ -2984,6 +3117,33 @@ pub async fn refresh_access_token(
     byoc_client_id: Option<&str>,
     byoc_client_secret: Option<&str>,
     stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
+) -> anyhow::Result<(String, i64, Option<String>)> {
+    refresh_access_token_with_clock(
+        config,
+        refresh_token,
+        byoc_client_id,
+        byoc_client_secret,
+        stored_token_url,
+        stored_redirect_uri,
+        || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock before UNIX epoch")
+                .as_secs() as i64
+        },
+    )
+    .await
+}
+
+async fn refresh_access_token_with_clock(
+    config: &RefreshConfig,
+    refresh_token: &str,
+    byoc_client_id: Option<&str>,
+    byoc_client_secret: Option<&str>,
+    stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
+    now: fn() -> i64,
 ) -> anyhow::Result<(String, i64, Option<String>)> {
     let client_id = match byoc_client_id {
         Some(id) => id.to_string(),
@@ -2996,40 +3156,14 @@ pub async fn refresh_access_token(
             .map_err(|_| anyhow::anyhow!("{} env var not set", config.client_secret_env))?,
     };
 
-    let mut req = reqwest::Client::new()
-        .post(config.endpoint_for(stored_token_url))
-        .timeout(REFRESH_REQUEST_TIMEOUT);
-
-    if matches!(config.client_auth, ClientCredentialMethod::BasicAuth) {
-        let b64 = base64::engine::general_purpose::STANDARD;
-        let encoded = b64.encode(format!("{client_id}:{client_secret}"));
-        req = req.header("authorization", format!("Basic {encoded}"));
-    }
-
-    let req = match (&config.body_format, &config.client_auth) {
-        (TokenBodyFormat::Form, ClientCredentialMethod::Body) => req.form(&[
-            ("client_id", client_id.as_str()),
-            ("client_secret", client_secret.as_str()),
-            ("refresh_token", refresh_token),
-            ("grant_type", "refresh_token"),
-        ]),
-        (TokenBodyFormat::Json, ClientCredentialMethod::Body) => req.json(&serde_json::json!({
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-        })),
-        (TokenBodyFormat::Form, ClientCredentialMethod::BasicAuth) => req.form(&[
-            ("refresh_token", refresh_token),
-            ("grant_type", "refresh_token"),
-        ]),
-        (TokenBodyFormat::Json, ClientCredentialMethod::BasicAuth) => {
-            req.json(&serde_json::json!({
-                "refresh_token": refresh_token,
-                "grant_type": "refresh_token",
-            }))
-        }
-    };
+    let req = refresh_request(
+        config,
+        refresh_token,
+        &client_id,
+        &client_secret,
+        stored_token_url,
+        stored_redirect_uri,
+    )?;
     let resp = req
         .send()
         .await
@@ -3067,12 +3201,7 @@ pub async fn refresh_access_token(
             .unwrap_or(3600),
     );
 
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("system clock before UNIX epoch")
-        .as_secs() as i64;
-
-    Ok((access_token, now + expires_in, new_refresh_token))
+    Ok((access_token, now() + expires_in, new_refresh_token))
 }
 
 #[derive(serde::Serialize)]
@@ -6664,6 +6793,7 @@ mod tests {
             body_format: TokenBodyFormat::Form,
             client_auth: ClientCredentialMethod::Body,
             max_lifetime_secs: None,
+            user_agent: None,
             stale_token_error_codes: &[],
         };
 
@@ -6672,7 +6802,7 @@ mod tests {
         // instead of hanging it.
         let outcome = tokio::time::timeout(
             REFRESH_REQUEST_TIMEOUT * 4,
-            refresh_access_token(&config, "rt", Some("id"), Some("secret"), None),
+            refresh_access_token(&config, "rt", Some("id"), Some("secret"), None, None),
         )
         .await
         .expect("the request timeout fired before the outer bound");
@@ -6690,5 +6820,232 @@ mod tests {
             elapsed < REFRESH_REQUEST_TIMEOUT + std::time::Duration::from_secs(1),
             "gave up late: {elapsed:?}"
         );
+    }
+    #[test]
+    fn trakt_credentials_stay_on_the_exact_api_host() {
+        assert_eq!(providers_for_host("api.trakt.tv"), vec!["trakt"]);
+        for host in ["trakt.tv", "evil.api.trakt.tv", "api.trakt.tv.evil.test"] {
+            assert!(build_app_injections("trakt", host, "fixture-access").is_empty());
+        }
+        assert_eq!(
+            build_app_injections("trakt", "api.trakt.tv", "fixture-access"),
+            vec![Injection::SetHeader {
+                name: "authorization".into(),
+                value: "Bearer fixture-access".into()
+            }]
+        );
+        let headers = credential_headers("trakt");
+        assert!(headers
+            .iter()
+            .any(|h| h.credential_field == "client_id" && h.header_name == "trakt-api-key"));
+        assert!(headers
+            .iter()
+            .any(|h| h.credential_field == "api_version" && h.header_name == "trakt-api-version"));
+    }
+
+    #[test]
+    fn trakt_refresh_sends_json_and_browser_identity_only_to_its_fixed_endpoint() {
+        let config = refresh_config("trakt").expect("Trakt refresh enabled");
+        let request = refresh_request(
+            config,
+            "fixture-refresh",
+            "fixture-client",
+            "fixture-secret",
+            Some("https://attacker.test/token"),
+            Some("https://fixture.test/trakt/callback"),
+        )
+        .expect("refresh client")
+        .build()
+        .expect("valid refresh request");
+        assert_eq!(request.url().as_str(), "https://api.trakt.tv/oauth/token");
+        assert_eq!(request.headers()["user-agent"], TRAKT_USER_AGENT);
+        assert_eq!(request.headers()["content-type"], "application/json");
+        let body: serde_json::Value =
+            serde_json::from_slice(request.body().expect("body").as_bytes().expect("bytes"))
+                .expect("JSON");
+        assert_eq!(
+            body,
+            serde_json::json!({"client_id":"fixture-client", "client_secret":"fixture-secret", "refresh_token":"fixture-refresh", "grant_type":"refresh_token", "redirect_uri":"https://fixture.test/trakt/callback"})
+        );
+        let google = refresh_config("gmail").expect("Google refresh enabled");
+        let other = refresh_request(google, "rt", "id", "secret", None, None)
+            .expect("refresh client")
+            .build()
+            .expect("Google request");
+        assert!(!other.headers().contains_key("user-agent"));
+        assert_eq!(
+            other.headers()["content-type"],
+            "application/x-www-form-urlencoded"
+        );
+    }
+
+    #[tokio::test]
+    async fn trakt_renewal_succeeds_only_with_the_complete_registered_payload() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("address");
+        let config = RefreshConfig {
+            token_url: Box::leak(format!("http://{addr}/token").into_boxed_str()),
+            alternate_token_urls: &[],
+            client_id_env: "ONECLI_TRAKT_FIXTURE_UNSET_ID",
+            client_secret_env: "ONECLI_TRAKT_FIXTURE_UNSET_SECRET",
+            body_format: TokenBodyFormat::TraktJson,
+            client_auth: ClientCredentialMethod::Body,
+            max_lifetime_secs: None,
+            user_agent: Some(TRAKT_USER_AGENT),
+            stale_token_error_codes: &[],
+        };
+        let missing = refresh_access_token(
+            &config,
+            "fixture-refresh",
+            Some("fixture-client"),
+            Some("fixture-secret"),
+            None,
+            None,
+        )
+        .await;
+        assert!(missing
+            .expect_err("missing URI must not spend a token")
+            .to_string()
+            .contains("reconnect it in OneCLI"));
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("request");
+            let mut request = Vec::new();
+            let body = loop {
+                let mut part = [0; 1024];
+                let count = stream.read(&mut part).await.expect("request bytes");
+                assert!(count > 0, "request ended early");
+                request.extend_from_slice(&part[..count]);
+                assert!(request.len() <= 8192, "fixture request bound");
+                if let Some(end) = request.windows(4).position(|p| p == b"\r\n\r\n") {
+                    let headers = std::str::from_utf8(&request[..end]).expect("headers");
+                    let length = headers
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().expect("length"))
+                        })
+                        .expect("content length");
+                    if request.len() >= end + 4 + length {
+                        break serde_json::from_slice::<serde_json::Value>(
+                            &request[end + 4..end + 4 + length],
+                        )
+                        .expect("JSON");
+                    }
+                }
+            };
+            let expected = serde_json::json!({"client_id":"fixture-client", "client_secret":"fixture-secret", "refresh_token":"fixture-refresh", "grant_type":"refresh_token", "redirect_uri":"https://fixture.test/Exact/Callback"});
+            let complete = body == expected;
+            let (status, response) = if complete {
+                (
+                    "200 OK",
+                    r#"{"access_token":"fixture-new-access","refresh_token":"fixture-new-refresh","expires_in":604800}"#,
+                )
+            } else {
+                ("400 Bad Request", r#"{"error":"invalid_request"}"#)
+            };
+            stream.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",response.len()).as_bytes()).await.expect("response");
+            complete
+        });
+        const FIXED_NOW: i64 = 1_600_000_000;
+        let result = refresh_access_token_with_clock(
+            &config,
+            "fixture-refresh",
+            Some("fixture-client"),
+            Some("fixture-secret"),
+            None,
+            Some("https://fixture.test/Exact/Callback"),
+            || FIXED_NOW,
+        )
+        .await
+        .expect("complete request accepted");
+        assert!(server.await.expect("server completed"));
+        assert_eq!(result.0, "fixture-new-access");
+        assert_eq!(result.2.as_deref(), Some("fixture-new-refresh"));
+        assert_eq!(result.1, FIXED_NOW + 604800);
+    }
+
+    #[tokio::test]
+    async fn a_token_endpoint_redirect_never_receives_the_refresh_body() {
+        use std::sync::{
+            atomic::{AtomicUsize, Ordering},
+            Arc,
+        };
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+        async fn read_request(stream: &mut tokio::net::TcpStream) {
+            let mut request = Vec::new();
+            loop {
+                let mut part = [0; 1024];
+                let count = stream.read(&mut part).await.expect("request bytes");
+                assert!(count > 0, "request ended before its declared body");
+                request.extend_from_slice(&part[..count]);
+                assert!(request.len() <= 8192, "fixture request bound");
+                if let Some(end) = request.windows(4).position(|p| p == b"\r\n\r\n") {
+                    let headers = std::str::from_utf8(&request[..end]).expect("HTTP headers");
+                    let length = headers
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().expect("body length"))
+                        })
+                        .expect("JSON request content length");
+                    if request.len() >= end + 4 + length {
+                        return;
+                    }
+                }
+            }
+        }
+
+        let destination = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let destination_addr = destination.local_addr().expect("address");
+        let visits = Arc::new(AtomicUsize::new(0));
+        let observed = Arc::clone(&visits);
+        let destination_task = tokio::spawn(async move {
+            let (mut stream, _) = destination.accept().await.expect("accept");
+            observed.fetch_add(1, Ordering::SeqCst);
+            read_request(&mut stream).await;
+            let body = r#"{"access_token":"fixture-access","expires_in":3600}"#;
+            stream.write_all(format!("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}", body.len(), body).as_bytes()).await.expect("reply");
+        });
+        let origin = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let origin_addr = origin.local_addr().expect("address");
+        let origin_task = tokio::spawn(async move {
+            let (mut stream, _) = origin.accept().await.expect("accept");
+            read_request(&mut stream).await;
+            stream.write_all(format!("HTTP/1.1 307 Temporary Redirect\r\nLocation: http://{destination_addr}/stolen\r\nContent-Length: 0\r\nConnection: close\r\n\r\n").as_bytes()).await.expect("redirect");
+        });
+        let config = RefreshConfig {
+            token_url: Box::leak(format!("http://{origin_addr}/token").into_boxed_str()),
+            alternate_token_urls: &[],
+            client_id_env: "ONECLI_REDIRECT_UNSET_ID",
+            client_secret_env: "ONECLI_REDIRECT_UNSET_SECRET",
+            body_format: TokenBodyFormat::Json,
+            client_auth: ClientCredentialMethod::Body,
+            max_lifetime_secs: None,
+            user_agent: Some(TRAKT_USER_AGENT),
+            stale_token_error_codes: &[],
+        };
+        let outcome = refresh_access_token(
+            &config,
+            "fixture-refresh",
+            Some("fixture-client"),
+            Some("fixture-secret"),
+            None,
+            None,
+        )
+        .await;
+        origin_task.await.expect("origin completed");
+        destination_task.abort();
+        assert!(outcome.is_err());
+        assert_eq!(visits.load(Ordering::SeqCst), 0);
     }
 }

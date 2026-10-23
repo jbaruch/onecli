@@ -223,6 +223,7 @@ pub(crate) async fn refresh_oauth_token(
             byoc_id,
             byoc_secret,
             token_url,
+            current.get("redirect_uri").and_then(Value::as_str),
         )
         .await
         {
