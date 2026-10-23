@@ -6950,7 +6950,7 @@ mod tests {
             stream.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",response.len()).as_bytes()).await.expect("response");
             complete
         });
-        const FIXED_NOW: i64 = 1_800_000_000;
+        const FIXED_NOW: i64 = 1_600_000_000;
         let result = refresh_access_token_with_clock(
             &config,
             "fixture-refresh",

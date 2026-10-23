@@ -28,7 +28,7 @@ export const trakt: AppDefinition = {
   icon: "/icons/trakt.svg",
   description:
     "Movie and TV watch history, lists, ratings, and recommendations.",
-  apiDocsUrl: "https://trakt.docs.apiary.io/",
+  apiDocsUrl: "https://developer.trakt.tv/",
   connectionMethod: {
     type: "credentials_import",
     fields: [
@@ -84,6 +84,7 @@ export const trakt: AppDefinition = {
       try {
         const response = await fetch("https://api.trakt.tv/users/settings", {
           headers: {
+            "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
             "trakt-api-key": clientId,
             "trakt-api-version": "2",

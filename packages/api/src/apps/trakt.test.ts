@@ -28,6 +28,7 @@ describe("Trakt credential import", () => {
     expect(fetch).toHaveBeenCalledOnce();
     expect(fetch).toHaveBeenCalledWith("https://api.trakt.tv/users/settings", {
       headers: {
+        "Content-Type": "application/json",
         Authorization: "Bearer fixture-access",
         "trakt-api-key": "fixture-client",
         "trakt-api-version": "2",
