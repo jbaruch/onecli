@@ -1,4 +1,5 @@
 import type { AppDefinition } from "./types";
+import { trakt } from "./trakt";
 // This registry is CLIENT-SAFE: it is imported by client components, so it —
 // and every definition it pulls in — must stay free of Node builtins (OAuth
 // handlers that need them load them lazily via `await import("node:...")`).
@@ -73,6 +74,7 @@ import { onyx } from "./onyx";
 import { webflow } from "./webflow";
 
 const staticApps: AppDefinition[] = [
+  trakt,
   salesforce,
   gmail,
   github,
