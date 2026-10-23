@@ -26,6 +26,7 @@ mod assemble;
 mod catalog;
 mod enforce;
 mod evaluate;
+mod google_write;
 mod graphql;
 mod inject_select;
 mod loaders;

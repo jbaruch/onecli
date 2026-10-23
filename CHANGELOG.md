@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Treat Calendar event cancellations through PATCH/PUT as deletion permission, and Gmail Trash label mutations as trash permission, including batchModify. Ordinary updates remain separate. The effective-permissions panel evaluates a representative body for each operation kind. The API and gateway share cases for ambiguous JSON, duplicate/escaped keys, label aliases and URL body fields; truncated bodies cannot use ordinary-update permission. This prepares NanoClaw's native approval policies (jbaruch/nanoclaw#1023).
+
 ## 2.14.0+trakt.1 — 2026-10-23
 
 ### Features

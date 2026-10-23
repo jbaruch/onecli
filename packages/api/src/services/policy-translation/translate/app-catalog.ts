@@ -7,6 +7,7 @@ import {
 import { endpointMatches } from "../endpoint-match";
 import { hostMatches } from "../../../lib/path-match";
 import { classifyGraphqlBody } from "../graphql";
+import { classifyGoogleWrite } from "../google-write";
 import type { OldCondition, PolicyRequest } from "../types";
 
 /** Look up a catalog tool by (provider, toolId) — mirrors resolvePermissionChanges. */
@@ -62,6 +63,16 @@ export const appTargetMatches = (
     const tool = getAppTool(provider, toolId);
     if (!tool) return false;
     if (!hostPatternsOf(tool).some((h) => hostMatches(request.host, h)))
+      return false;
+    if (
+      tool.googleWriteOps &&
+      classifyGoogleWrite(
+        provider,
+        request.method,
+        request.path,
+        request.body,
+      ) !== tool.googleWriteOps
+    )
       return false;
     if (tool.graphqlOps) {
       // A URL query string fails closed to "mutation": some GraphQL servers

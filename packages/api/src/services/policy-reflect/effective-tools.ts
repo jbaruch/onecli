@@ -52,6 +52,9 @@ import { buildInjectionProbe } from "./injection";
 //   fail-closed classifier resolves the same way it will live and the panel's
 //   verdict matches the gateway. (Without a body, every GraphQL-tagged query
 //   tool would fail-close to "mutation" and misreport as blocked.)
+// - `googleWriteOps` tools likewise synthesize ordinary label/event changes or
+//   Trash/cancellation bodies. Missing bodies would misreport ordinary updates
+//   under the destructive permission's verdict.
 // - `hasInjections` is DERIVED per tool host from the agent's credential pools
 //   (the injection-probe approximation, hoisted once per request); the response
 //   discloses whether a credential is attached so a "Not managed" wall on an
@@ -189,16 +192,27 @@ export const synthesizePath = (pattern: string): string => {
 export const synthesizeHost = (pattern: string): string =>
   pattern.replaceAll("*", TOKEN);
 
-/** Synthesize the representative request body for a tool: GraphQL-tagged
- * tools get a minimal document of their own kind (so the fail-closed
- * classifier resolves exactly as it will live - see the honesty note above);
- * everything else stays body-less. The documents are the smallest valid
- * members of each class under both ports' classifiers. */
+/** Body-discriminated tools get a representative request of their own kind.
+ * Reflection runs the same fail-closed classifier as the gateway; other tools
+ * stay body-less. These requests are evaluated locally, never forwarded. */
 export const synthesizeBody = (tool: AppTool): string | undefined => {
   if (tool.graphqlOps === "query")
     return JSON.stringify({ query: `query { ${TOKEN} }` });
   if (tool.graphqlOps === "mutation")
     return JSON.stringify({ query: `mutation { ${TOKEN} }` });
+  if (tool.googleWriteOps) {
+    const destructive = tool.googleWriteOps === "destructive";
+    if (tool.pathPattern.startsWith("/calendar/"))
+      return JSON.stringify({
+        status: destructive ? "cancelled" : "confirmed",
+      });
+    return JSON.stringify({
+      ...(tool.pathPattern.endsWith("/batchModify") ? { ids: ["a123"] } : {}),
+      ...(destructive
+        ? { addLabelIds: ["TRASH"] }
+        : { removeLabelIds: ["INBOX"] }),
+    });
+  }
   return undefined;
 };
 

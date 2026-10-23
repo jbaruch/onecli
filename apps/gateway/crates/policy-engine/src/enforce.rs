@@ -33,7 +33,7 @@ use super::types::{Action, NewRule, PolicyRequest, RateWindow, Scope};
 /// - a rule carries a `body contains` condition on a target that can match
 ///   this request's host (without the body a restrictive rule would decide on
 ///   nothing; with #999's fail-closed truncation it would over-block instead);
-/// - a rule's app/connection target names a `graphqlOps`-discriminated tool
+/// - a rule's app/connection target names a body-discriminated tool
 ///   whose host surface covers this request (without the body the classifier
 ///   fail-closes every request to "mutation", so an allow on the query tool
 ///   would stop matching and break allowed queries - deny stays safe,
@@ -85,7 +85,7 @@ pub fn needs_body_buffer(v2: &PolicyV2Rules, policy_host: &str, path: &str) -> b
                             .map(String::as_str)
                     });
                     provider.is_some_and(|provider| {
-                        super::catalog::any_graphql_discriminated_for_host(
+                        super::catalog::any_body_discriminated_for_host(
                             provider,
                             &t.app_tools,
                             host,

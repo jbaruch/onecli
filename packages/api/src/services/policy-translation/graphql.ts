@@ -69,18 +69,18 @@ export const classifyGraphqlBody = (
   // exactly one LITERAL top-level `"query"` key (an escaped key like
   // `"quer\u0079"` also fails - legitimate clients never escape it), so the
   // classified document is provably the one every JSON parser extracts.
-  if (countTopLevelLiteralQueryKeys(body) !== 1) return "mutation";
+  if (countTopLevelLiteralKeys(body, "query") !== 1) return "mutation";
   return classifyGraphqlDocument(document);
 };
 
 /**
- * Count top-level object keys that are LITERALLY `query` in raw JSON text.
+ * Count top-level object keys that are LITERALLY `key` in raw JSON text.
  * Returns -1 (→ fail closed) when any top-level key contains a backslash
  * escape, since a decoded key could then alias `query` without matching
  * literally. Assumes `text` already parsed as a JSON object (checked by the
  * caller), so the scan only needs string/depth tracking, not validation.
  */
-const countTopLevelLiteralQueryKeys = (text: string): number => {
+export const countTopLevelLiteralKeys = (text: string, key: string): number => {
   let count = 0;
   let depth = 0;
   let i = 0;
@@ -115,7 +115,7 @@ const countTopLevelLiteralQueryKeys = (text: string): number => {
         j += 1;
       if (depth === 1 && text[j] === ":") {
         if (hasEscape) return -1;
-        if (value === "query") count += 1;
+        if (value === key) count += 1;
       }
       continue;
     }

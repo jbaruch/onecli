@@ -3727,7 +3727,20 @@
       ],
       "methods": [
         "POST"
-      ]
+      ],
+      "googleWriteOps": "ordinary"
+    },
+    "batch_trash_messages": {
+      "hosts": [
+        "gmail.googleapis.com"
+      ],
+      "paths": [
+        "/gmail/v1/users/*/messages/batchModify"
+      ],
+      "methods": [
+        "POST"
+      ],
+      "googleWriteOps": "destructive"
     },
     "create_draft": {
       "hosts": [
@@ -3859,7 +3872,8 @@
       ],
       "methods": [
         "POST"
-      ]
+      ],
+      "googleWriteOps": "ordinary"
     },
     "modify_thread": {
       "hosts": [
@@ -3870,7 +3884,8 @@
       ],
       "methods": [
         "POST"
-      ]
+      ],
+      "googleWriteOps": "ordinary"
     },
     "read_all": {
       "hosts": [
@@ -3932,22 +3947,26 @@
         "gmail.googleapis.com"
       ],
       "paths": [
-        "/gmail/v1/users/*/messages/*/trash"
+        "/gmail/v1/users/*/messages/*/trash",
+        "/gmail/v1/users/*/messages/*/modify"
       ],
       "methods": [
         "POST"
-      ]
+      ],
+      "googleWriteOps": "destructive"
     },
     "trash_thread": {
       "hosts": [
         "gmail.googleapis.com"
       ],
       "paths": [
-        "/gmail/v1/users/*/threads/*/trash"
+        "/gmail/v1/users/*/threads/*/trash",
+        "/gmail/v1/users/*/threads/*/modify"
       ],
       "methods": [
         "POST"
-      ]
+      ],
+      "googleWriteOps": "destructive"
     },
     "untrash_message": {
       "hosts": [
@@ -4121,8 +4140,11 @@
         "/calendar/v3/calendars/*/events/*"
       ],
       "methods": [
-        "DELETE"
-      ]
+        "DELETE",
+        "PUT",
+        "PATCH"
+      ],
+      "googleWriteOps": "destructive"
     },
     "get_calendar": {
       "hosts": [
@@ -4189,7 +4211,8 @@
       "methods": [
         "PUT",
         "PATCH"
-      ]
+      ],
+      "googleWriteOps": "ordinary"
     },
     "write_all": {
       "hosts": [

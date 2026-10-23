@@ -72,19 +72,19 @@ pub fn classify_graphql_body(body: Option<&[u8]>) -> GraphqlOpKind {
     // Demand exactly one LITERAL top-level `"query"` key (an escaped key
     // also fails - legitimate clients never escape it), so the classified
     // document is provably the one every JSON parser extracts. Mirrors the
-    // TS twin's `countTopLevelLiteralQueryKeys`.
-    if count_top_level_literal_query_keys(bytes) != 1 {
+    // TS twin's `countTopLevelLiteralKeys`.
+    if count_top_level_literal_keys(bytes, b"query") != 1 {
         return GraphqlOpKind::Mutation;
     }
     classify_graphql_document(document)
 }
 
-/// Count top-level object keys that are LITERALLY `query` in raw JSON text.
+/// Count top-level object keys that are LITERALLY `key` in raw JSON text.
 /// Returns -1 (→ fail closed) when any top-level key contains a backslash
 /// escape, since a decoded key could then alias `query` without matching
 /// literally. Assumes `text` already parsed as a JSON object (checked by the
 /// caller), so the scan only needs string/depth tracking, not validation.
-fn count_top_level_literal_query_keys(text: &[u8]) -> i32 {
+pub(super) fn count_top_level_literal_keys(text: &[u8], key: &[u8]) -> i32 {
     let mut count: i32 = 0;
     let mut depth: i32 = 0;
     let mut i = 0usize;
@@ -116,7 +116,7 @@ fn count_top_level_literal_query_keys(text: &[u8]) -> i32 {
                 if has_escape {
                     return -1;
                 }
-                if value == b"query" {
+                if value == key {
                     count += 1;
                 }
             }

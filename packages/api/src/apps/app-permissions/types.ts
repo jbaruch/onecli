@@ -41,6 +41,9 @@ export interface AppTool {
    * never smuggle a mutation). Tools without this field are unaffected.
    */
   graphqlOps?: "query" | "mutation";
+  /** Distinguish ordinary label/event updates from trash/cancellation bodies.
+   * Missing, ambiguous or truncated bodies require destructive permission. */
+  googleWriteOps?: "ordinary" | "destructive";
 }
 
 export interface AppToolGroup {
