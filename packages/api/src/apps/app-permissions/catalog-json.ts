@@ -30,6 +30,7 @@ export interface CatalogTool {
    * only on tools sharing a `POST /graphql` endpoint. The gateway classifies
    * the buffered body fail-closed and matches the tool only on its kind. */
   graphqlOps?: "query" | "mutation";
+  googleWriteOps?: "ordinary" | "destructive";
 }
 
 /** provider → tool id → endpoints. */
@@ -56,6 +57,9 @@ export const buildCatalogJson = (
           // list, or omit both `method`/`methods` for genuine any-method tools.
           methods: tool.methods ?? (tool.method ? [tool.method] : []),
           ...(tool.graphqlOps ? { graphqlOps: tool.graphqlOps } : {}),
+          ...(tool.googleWriteOps
+            ? { googleWriteOps: tool.googleWriteOps }
+            : {}),
         };
       }
     }

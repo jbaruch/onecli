@@ -120,10 +120,11 @@ export const gmailPermissions: AppPermissionDefinition = {
         {
           id: "modify_message",
           name: "Modify message",
-          description: "Add or remove labels on a message",
+          description: "Add or remove labels without moving a message to Trash",
           hostPattern: "gmail.googleapis.com",
           pathPattern: "/gmail/v1/users/*/messages/*/modify",
           method: "POST",
+          googleWriteOps: "ordinary",
         },
         {
           id: "trash_message",
@@ -131,7 +132,9 @@ export const gmailPermissions: AppPermissionDefinition = {
           description: "Move a message to trash",
           hostPattern: "gmail.googleapis.com",
           pathPattern: "/gmail/v1/users/*/messages/*/trash",
+          aliasPatterns: ["/gmail/v1/users/*/messages/*/modify"],
           method: "POST",
+          googleWriteOps: "destructive",
         },
         {
           id: "delete_draft",
@@ -145,10 +148,20 @@ export const gmailPermissions: AppPermissionDefinition = {
           id: "batch_modify_messages",
           name: "Batch modify messages",
           description:
-            "Add or remove labels on many messages at once (e.g. move the whole inbox to trash)",
+            "Add or remove labels on many messages without moving them to Trash",
           hostPattern: "gmail.googleapis.com",
           pathPattern: "/gmail/v1/users/*/messages/batchModify",
           method: "POST",
+          googleWriteOps: "ordinary",
+        },
+        {
+          id: "batch_trash_messages",
+          name: "Trash messages through labels",
+          description: "Add the Trash label to multiple messages",
+          hostPattern: "gmail.googleapis.com",
+          pathPattern: "/gmail/v1/users/*/messages/batchModify",
+          method: "POST",
+          googleWriteOps: "destructive",
         },
         {
           id: "batch_delete_messages",
@@ -196,7 +209,9 @@ export const gmailPermissions: AppPermissionDefinition = {
           description: "Move an entire thread to trash",
           hostPattern: "gmail.googleapis.com",
           pathPattern: "/gmail/v1/users/*/threads/*/trash",
+          aliasPatterns: ["/gmail/v1/users/*/threads/*/modify"],
           method: "POST",
+          googleWriteOps: "destructive",
         },
         {
           id: "untrash_thread",
@@ -209,10 +224,11 @@ export const gmailPermissions: AppPermissionDefinition = {
         {
           id: "modify_thread",
           name: "Modify thread",
-          description: "Add or remove labels on an entire thread",
+          description: "Add or remove labels without moving a thread to Trash",
           hostPattern: "gmail.googleapis.com",
           pathPattern: "/gmail/v1/users/*/threads/*/modify",
           method: "POST",
+          googleWriteOps: "ordinary",
         },
         {
           id: "delete_thread",

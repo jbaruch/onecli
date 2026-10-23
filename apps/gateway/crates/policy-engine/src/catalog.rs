@@ -40,6 +40,7 @@ struct CatalogTool {
     /// agrees - `"query"` requires a provably pure query document; every
     /// doubtful body classifies as `"mutation"`.
     graphql_ops: Option<String>,
+    google_write_ops: Option<String>,
 }
 
 type Catalog = HashMap<String, HashMap<String, CatalogTool>>;
@@ -136,13 +137,13 @@ pub(super) fn app_target_could_match_host(
         })
 }
 
-/// Does an app target name a `graphqlOps`-discriminated tool that could match
+/// Does an app target name a body-discriminated tool that could match
 /// this request's host? Drives the body-buffer decision: without the buffered
 /// body the classifier fail-closes every request to "mutation", which would
 /// break allowed queries — but only requests the tool's host surface can
 /// reach need the body at all (#999). A whole-app target (empty tools)
 /// matches host-only and never consults the classifier, so it needs no body.
-pub(super) fn any_graphql_discriminated_for_host(
+pub(super) fn any_body_discriminated_for_host(
     provider: &str,
     tools: &[String],
     request_host: &str,
@@ -151,12 +152,12 @@ pub(super) fn any_graphql_discriminated_for_host(
     let Some(provider_tools) = catalog().get(provider) else {
         return false;
     };
-    let any_graphql = tools.iter().any(|tool_id| {
+    let any_discriminator = tools.iter().any(|tool_id| {
         provider_tools
             .get(tool_id)
-            .is_some_and(|tool| tool.graphql_ops.is_some())
+            .is_some_and(|tool| tool.graphql_ops.is_some() || tool.google_write_ops.is_some())
     });
-    any_graphql && app_target_could_match_host(provider, tools, request_host, request_path)
+    any_discriminator && app_target_could_match_host(provider, tools, request_host, request_path)
 }
 
 /// Does the request hit the app target? Mirrors `appTargetMatches` (byte-lockstep
@@ -221,6 +222,21 @@ pub(super) fn app_target_matches(
         if !host_ok && !host_via_mirror {
             return false;
         }
+        if let Some(ops) = &tool.google_write_ops {
+            let classified = if body.is_truncated() {
+                "destructive"
+            } else {
+                super::google_write::classify_google_write(
+                    provider,
+                    request_method,
+                    request_path,
+                    body.bytes(),
+                )
+            };
+            if classified != ops {
+                return false;
+            }
+        }
         // GraphQL-discriminated tool: the body's classified operation kind
         // must agree. Classification is fail-closed (no/unparsable body →
         // mutation), and a TRUNCATED body is forced to mutation explicitly
@@ -265,6 +281,72 @@ pub(super) fn app_target_matches(
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn google_write_shared_corpus_and_truncated_prefixes() {
+        let cases: Vec<serde_json::Value> = serde_json::from_str(include_str!(
+            "../../../../../packages/api/src/services/policy-translation/corpus/google-write-cases.json"
+        )).unwrap();
+        for case in cases {
+            let string = |key: &str| case[key].as_str().unwrap();
+            let provider = string("provider");
+            let method = string("method");
+            let path = string("path");
+            let body = case["body"].as_str().map(str::as_bytes);
+            let kind = string("kind");
+            assert_eq!(
+                super::super::google_write::classify_google_write(provider, method, path, body),
+                kind,
+                "{}",
+                string("name")
+            );
+            let host = if provider == "gmail" {
+                "gmail.googleapis.com"
+            } else {
+                "www.googleapis.com"
+            };
+            let complete = body.map_or(ConditionBody::None, ConditionBody::Full);
+            for (key, expected) in [
+                ("ordinary", kind == "ordinary"),
+                ("destructive", kind == "destructive"),
+            ] {
+                let tools = vec![string(key).to_string()];
+                assert_eq!(
+                    super::app_target_matches(
+                        provider,
+                        &tools,
+                        host,
+                        method,
+                        path,
+                        complete,
+                        &None,
+                        PolicyAction::Allow
+                    ),
+                    expected,
+                    "{} / {}",
+                    string("name"),
+                    key
+                );
+                // An apparently valid JSON prefix must never authorize an unseen tail.
+                assert_eq!(
+                    super::app_target_matches(
+                        provider,
+                        &tools,
+                        host,
+                        method,
+                        path,
+                        ConditionBody::Truncated(body.unwrap_or(b"")),
+                        &None,
+                        PolicyAction::Allow
+                    ),
+                    key == "destructive",
+                    "truncated {} / {}",
+                    string("name"),
+                    key
+                );
+            }
+        }
+    }
+
     use super::*;
 
     // ── AWS endpoint coverage: the Rust half of the TS
@@ -284,6 +366,7 @@ mod tests {
             paths: vec!["/*".to_string()],
             methods: vec![],
             graphql_ops: None,
+            google_write_ops: None,
         };
         let map = |pairs: &[(&str, CatalogTool)]| -> HashMap<String, CatalogTool> {
             pairs
@@ -296,6 +379,7 @@ mod tests {
                             paths: v.paths.clone(),
                             methods: v.methods.clone(),
                             graphql_ops: v.graphql_ops.clone(),
+                            google_write_ops: v.google_write_ops.clone(),
                         },
                     )
                 })
@@ -1813,12 +1897,18 @@ mod tests {
                         // wildcards replaced so `matches_request` can hit.
                         let concrete_path = path.replace('*', "x");
                         let method = tool.methods.first().map(String::as_str).unwrap_or("POST");
-                        // Skip graphql-discriminated tools' body coupling by
+                        // Supply a body matching each discriminator's kind.
                         // matching with the kind their ops demand.
                         let body: Vec<u8> = match tool.graphql_ops.as_deref() {
                             Some("query") => br#"{"query": "query { x }"}"#.to_vec(),
                             Some(_) => br#"{"query": "mutation { x }"}"#.to_vec(),
-                            None => Vec::new(),
+                            None => match tool.google_write_ops.as_deref() {
+                                Some("ordinary") => b"{}".to_vec(),
+                                Some(_) => {
+                                    br#"{"addLabelIds":["TRASH"],"status":"cancelled"}"#.to_vec()
+                                }
+                                None => Vec::new(),
+                            },
                         };
                         let matched = app_target_matches(
                             provider,

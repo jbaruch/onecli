@@ -1,0 +1,922 @@
+[
+  {
+    "name": "calendar PATCH body 0",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"summary\":\"Changed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 0",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"summary\":\"Changed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 1",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 1",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 2",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"tentative\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 2",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"tentative\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 3",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"description\":\"status cancelled is only prose\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 3",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"description\":\"status cancelled is only prose\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 4",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 4",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 5",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"canc\\u0065lled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 5",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"canc\\u0065lled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 6",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"cancelled\",\"status\":\"confirmed\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 6",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"cancelled\",\"status\":\"confirmed\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 7",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\",\"status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 7",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\",\"status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 8",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"sta\\u0074us\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 8",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"sta\\u0074us\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 9",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":null}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 9",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":null}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 10",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":{}}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 10",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":{}}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 11",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"Status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 11",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"Status\":\"cancelled\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 12",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"unknown\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 12",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"unknown\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 13",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\"",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 13",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "{\"status\":\"confirmed\"",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 14",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "[]",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 14",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": "[]",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PATCH body 15",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar PUT body 15",
+    "provider": "google-calendar",
+    "method": "PUT",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar DELETE without body",
+    "provider": "google-calendar",
+    "method": "DELETE",
+    "path": "/calendar/v3/calendars/primary/events/event-id",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar transport options",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id?sendUpdates=none&fields=id",
+    "body": "{\"summary\":\"Changed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "calendar unknown URL body field",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/event-id?%73tatus=cancelled",
+    "body": "{}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "gmail messages/a123/modify body 0",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"removeLabelIds\":[\"INBOX\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 1",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\",\"Label_123\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 2",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"removeLabelIds\":[\"TRASH\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 3",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"ids\":[\"a123\"],\"addLabelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 4",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"TR\\u0041SH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 5",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 6",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"trash\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 7",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"TRASH\"],\"addLabelIds\":[\"UNREAD\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 8",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 9",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"addLabe\\u006cIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 10",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":null}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 11",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":\"TRASH\"}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 12",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"addLabelIds\":[\"TRASH\"]",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 13",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "{\"labelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 14",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": "null",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail messages/a123/modify body 15",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "gmail threads/a123/modify body 0",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"removeLabelIds\":[\"INBOX\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 1",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\",\"Label_123\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 2",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"removeLabelIds\":[\"TRASH\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 3",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"ids\":[\"a123\"],\"addLabelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 4",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"TR\\u0041SH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 5",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 6",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"trash\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 7",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"TRASH\"],\"addLabelIds\":[\"UNREAD\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 8",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 9",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"addLabe\\u006cIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 10",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":null}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 11",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":\"TRASH\"}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 12",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"addLabelIds\":[\"TRASH\"]",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 13",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "{\"labelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 14",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": "null",
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail threads/a123/modify body 15",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail messages/batchModify body 0",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"removeLabelIds\":[\"INBOX\"]}",
+    "kind": "ordinary",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 1",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"UNREAD\",\"Label_123\"]}",
+    "kind": "ordinary",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 2",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"removeLabelIds\":[\"TRASH\"]}",
+    "kind": "ordinary",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 3",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"ids\":[\"a123\"],\"addLabelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 4",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"TR\\u0041SH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 5",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 6",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"trash\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 7",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"TRASH\"],\"addLabelIds\":[\"UNREAD\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 8",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"add_label_ids\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 9",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"UNREAD\"],\"addLabe\\u006cIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 10",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":null}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 11",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":\"TRASH\"}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 12",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"addLabelIds\":[\"TRASH\"]",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 13",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "{\"labelIds\":[\"TRASH\"]}",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 14",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": "null",
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "gmail messages/batchModify body 15",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/batchModify",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "batch_modify_messages",
+    "destructive": "batch_trash_messages"
+  },
+  {
+    "name": "archive projection options",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/modify?fields=id%2Cmessages%28id%2ClabelIds%29",
+    "body": "{\"removeLabelIds\":[\"INBOX\"]}",
+    "kind": "ordinary",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "gmail URL body field",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/modify?addLabelIds=TRASH",
+    "body": "{}",
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "direct messages trash",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/messages/a123/trash",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "modify_message",
+    "destructive": "trash_message"
+  },
+  {
+    "name": "direct threads trash",
+    "provider": "gmail",
+    "method": "POST",
+    "path": "/gmail/v1/users/me/threads/a123/trash",
+    "body": null,
+    "kind": "destructive",
+    "ordinary": "modify_thread",
+    "destructive": "trash_thread"
+  },
+  {
+    "name": "Calendar event ID trash is ordinary",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/trash",
+    "body": "{\"summary\":\"Changed\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "Calendar lone surrogate",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/fixture",
+    "body": "{\"description\":\"\\ud800\"}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "Calendar overflowing number",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/fixture",
+    "body": "{\"sequence\":1e999}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "Calendar depth bound",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/fixture",
+    "body": "{\"description\":[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[0]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]}",
+    "kind": "destructive",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  },
+  {
+    "name": "Calendar valid Unicode",
+    "provider": "google-calendar",
+    "method": "PATCH",
+    "path": "/calendar/v3/calendars/primary/events/fixture",
+    "body": "{\"description\": \"Calendar \ud83d\uddd3\ufe0f\"}",
+    "kind": "ordinary",
+    "ordinary": "update_event",
+    "destructive": "delete_event"
+  }
+]
