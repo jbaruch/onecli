@@ -94,6 +94,8 @@ pub enum TokenBodyFormat {
     Form,
     /// `application/json` (required by Atlassian).
     Json,
+    /// Trakt JSON includes the connection's registered redirect URI.
+    TraktJson,
 }
 
 /// How client credentials are sent during token refresh.
@@ -578,7 +580,7 @@ static TRAKT_REFRESH: RefreshConfig = RefreshConfig {
     alternate_token_urls: &[],
     client_id_env: "TRAKT_CLIENT_ID",
     client_secret_env: "TRAKT_CLIENT_SECRET",
-    body_format: TokenBodyFormat::Json,
+    body_format: TokenBodyFormat::TraktJson,
     client_auth: ClientCredentialMethod::Body,
     max_lifetime_secs: None,
     user_agent: Some(TRAKT_USER_AGENT),
@@ -3035,6 +3037,7 @@ fn refresh_request(
     client_id: &str,
     client_secret: &str,
     stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
 ) -> anyhow::Result<reqwest::RequestBuilder> {
     // A redirect must not carry a client secret or rotating refresh token to
     // a different endpoint, including a same-origin path the registry did not select.
@@ -3068,6 +3071,21 @@ fn refresh_request(
             "refresh_token": refresh_token,
             "grant_type": "refresh_token",
         })),
+        (TokenBodyFormat::TraktJson, ClientCredentialMethod::Body) => {
+            let redirect_uri = stored_redirect_uri.filter(|uri| !uri.is_empty()).ok_or_else(|| {
+                anyhow::anyhow!("Trakt connection lacks its registered redirect URI; reconnect it in OneCLI before refreshing")
+            })?;
+            req.json(&serde_json::json!({
+                "client_id": client_id,
+                "client_secret": client_secret,
+                "refresh_token": refresh_token,
+                "grant_type": "refresh_token",
+                "redirect_uri": redirect_uri,
+            }))
+        }
+        (TokenBodyFormat::TraktJson, ClientCredentialMethod::BasicAuth) => {
+            anyhow::bail!("Trakt refresh requires body client authentication")
+        }
         (TokenBodyFormat::Form, ClientCredentialMethod::BasicAuth) => req.form(&[
             ("refresh_token", refresh_token),
             ("grant_type", "refresh_token"),
@@ -3099,6 +3117,7 @@ pub async fn refresh_access_token(
     byoc_client_id: Option<&str>,
     byoc_client_secret: Option<&str>,
     stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
 ) -> anyhow::Result<(String, i64, Option<String>)> {
     let client_id = match byoc_client_id {
         Some(id) => id.to_string(),
@@ -3117,6 +3136,7 @@ pub async fn refresh_access_token(
         &client_id,
         &client_secret,
         stored_token_url,
+        stored_redirect_uri,
     )?;
     let resp = req
         .send()
@@ -6761,7 +6781,7 @@ mod tests {
         // instead of hanging it.
         let outcome = tokio::time::timeout(
             REFRESH_REQUEST_TIMEOUT * 4,
-            refresh_access_token(&config, "rt", Some("id"), Some("secret"), None),
+            refresh_access_token(&config, "rt", Some("id"), Some("secret"), None, None),
         )
         .await
         .expect("the request timeout fired before the outer bound");
@@ -6811,6 +6831,7 @@ mod tests {
             "fixture-client",
             "fixture-secret",
             Some("https://attacker.test/token"),
+            Some("https://fixture.test/trakt/callback"),
         )
         .expect("refresh client")
         .build()
@@ -6823,10 +6844,10 @@ mod tests {
                 .expect("JSON");
         assert_eq!(
             body,
-            serde_json::json!({"client_id":"fixture-client", "client_secret":"fixture-secret", "refresh_token":"fixture-refresh", "grant_type":"refresh_token"})
+            serde_json::json!({"client_id":"fixture-client", "client_secret":"fixture-secret", "refresh_token":"fixture-refresh", "grant_type":"refresh_token", "redirect_uri":"https://fixture.test/trakt/callback"})
         );
         let google = refresh_config("gmail").expect("Google refresh enabled");
-        let other = refresh_request(google, "rt", "id", "secret", None)
+        let other = refresh_request(google, "rt", "id", "secret", None, None)
             .expect("refresh client")
             .build()
             .expect("Google request");
@@ -6835,6 +6856,97 @@ mod tests {
             other.headers()["content-type"],
             "application/x-www-form-urlencoded"
         );
+    }
+
+    #[tokio::test]
+    async fn trakt_renewal_succeeds_only_with_the_complete_registered_payload() {
+        use tokio::io::{AsyncReadExt, AsyncWriteExt};
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0")
+            .await
+            .expect("bind");
+        let addr = listener.local_addr().expect("address");
+        let config = RefreshConfig {
+            token_url: Box::leak(format!("http://{addr}/token").into_boxed_str()),
+            alternate_token_urls: &[],
+            client_id_env: "ONECLI_TRAKT_FIXTURE_UNSET_ID",
+            client_secret_env: "ONECLI_TRAKT_FIXTURE_UNSET_SECRET",
+            body_format: TokenBodyFormat::TraktJson,
+            client_auth: ClientCredentialMethod::Body,
+            max_lifetime_secs: None,
+            user_agent: Some(TRAKT_USER_AGENT),
+            stale_token_error_codes: &[],
+        };
+        let missing = refresh_access_token(
+            &config,
+            "fixture-refresh",
+            Some("fixture-client"),
+            Some("fixture-secret"),
+            None,
+            None,
+        )
+        .await;
+        assert!(missing
+            .expect_err("missing URI must not spend a token")
+            .to_string()
+            .contains("reconnect it in OneCLI"));
+        let server = tokio::spawn(async move {
+            let (mut stream, _) = listener.accept().await.expect("request");
+            let mut request = Vec::new();
+            let body = loop {
+                let mut part = [0; 1024];
+                let count = stream.read(&mut part).await.expect("request bytes");
+                assert!(count > 0, "request ended early");
+                request.extend_from_slice(&part[..count]);
+                assert!(request.len() <= 8192, "fixture request bound");
+                if let Some(end) = request.windows(4).position(|p| p == b"\r\n\r\n") {
+                    let headers = std::str::from_utf8(&request[..end]).expect("headers");
+                    let length = headers
+                        .lines()
+                        .find_map(|line| {
+                            let (name, value) = line.split_once(':')?;
+                            name.eq_ignore_ascii_case("content-length")
+                                .then(|| value.trim().parse::<usize>().expect("length"))
+                        })
+                        .expect("content length");
+                    if request.len() >= end + 4 + length {
+                        break serde_json::from_slice::<serde_json::Value>(
+                            &request[end + 4..end + 4 + length],
+                        )
+                        .expect("JSON");
+                    }
+                }
+            };
+            let expected = serde_json::json!({"client_id":"fixture-client", "client_secret":"fixture-secret", "refresh_token":"fixture-refresh", "grant_type":"refresh_token", "redirect_uri":"https://fixture.test/Exact/Callback"});
+            let complete = body == expected;
+            let (status, response) = if complete {
+                (
+                    "200 OK",
+                    r#"{"access_token":"fixture-new-access","refresh_token":"fixture-new-refresh","expires_in":604800}"#,
+                )
+            } else {
+                ("400 Bad Request", r#"{"error":"invalid_request"}"#)
+            };
+            stream.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",response.len()).as_bytes()).await.expect("response");
+            complete
+        });
+        let before = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .expect("clock")
+            .as_secs() as i64;
+        let result = refresh_access_token(
+            &config,
+            "fixture-refresh",
+            Some("fixture-client"),
+            Some("fixture-secret"),
+            None,
+            Some("https://fixture.test/Exact/Callback"),
+        )
+        .await
+        .expect("complete request accepted");
+        assert!(server.await.expect("server completed"));
+        assert_eq!(result.0, "fixture-new-access");
+        assert_eq!(result.2.as_deref(), Some("fixture-new-refresh"));
+        assert!(result.1 >= before + 604800);
     }
 
     #[tokio::test]
@@ -6908,6 +7020,7 @@ mod tests {
             "fixture-refresh",
             Some("fixture-client"),
             Some("fixture-secret"),
+            None,
             None,
         )
         .await;

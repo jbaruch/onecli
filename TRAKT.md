@@ -1,8 +1,8 @@
 # Native Trakt token renewal
 
-The Trakt connection imports an existing authorized access/refresh token pair and its OAuth client. Import validates the bearer with a read-only account request. It does not spend the refresh token. The API stores the client in its encrypted app configuration and links the connection to it.
+The Trakt connection imports an existing authorized access/refresh token pair and its OAuth client, including the exact redirect URI registered for that application. Import validates the bearer with a read-only account request. It does not spend the refresh token. The API stores the client in its encrypted app configuration and links the connection to it.
 
-The imported bearer has no trustworthy mint timestamp, so its stored expiry is zero. The first gateway request renews it through the normal cross-instance refresh lock and encrypted token-pair persistence. Further renewals use the provider's returned lifetime. Agents receive the API response, not the credentials. Injection is confined to `api.trakt.tv` and supplies the bearer, client ID and API version.
+The imported bearer has no trustworthy mint timestamp, so its stored expiry is zero. The first gateway request renews it through the normal cross-instance refresh lock and encrypted token-pair persistence. Further renewals use the provider's returned lifetime. The connection stores `redirect_uri`; Trakt JSON refresh requests include it unchanged, as required by the [current token contract](https://developer.trakt.tv/?operation=postOauthToken&section=reference). Do not guess it or substitute a new callback when importing an existing grant. Agents receive the API response, not the credentials. Injection is confined to `api.trakt.tv` and supplies the bearer, client ID and API version.
 
 ## Cutover from an existing refresher
 

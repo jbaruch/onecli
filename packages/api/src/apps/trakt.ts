@@ -45,6 +45,11 @@ export const trakt: AppDefinition = {
         secret: true,
       },
       {
+        name: "redirectUri",
+        label: "Registered redirect URI",
+        placeholder: "Exact URI from the Trakt application's settings",
+      },
+      {
         name: "accessToken",
         label: "Access token",
         placeholder: "Existing Trakt access token",
@@ -62,6 +67,17 @@ export const trakt: AppDefinition = {
       requiredCredential(fields, "clientSecret");
       const accessToken = requiredCredential(fields, "accessToken");
       const refreshToken = requiredCredential(fields, "refreshToken");
+      const redirectUri = requiredCredential(fields, "redirectUri");
+      try {
+        new URL(redirectUri);
+      } catch (error) {
+        if (error instanceof TypeError) {
+          throw new Error(
+            "Provide the exact absolute redirect URI registered for this Trakt application.",
+          );
+        }
+        throw error;
+      }
       // Validate the existing bearer without spending its single-use refresh
       // token. The gateway owns the first refresh after this import is stored.
       let profile: unknown;
@@ -123,6 +139,7 @@ export const trakt: AppDefinition = {
           // request through its locked, durable refresh instead of guessing.
           expires_at: 0,
           client_id: clientId,
+          redirect_uri: redirectUri,
           api_version: "2",
         },
         scopes: [],

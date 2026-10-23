@@ -10,6 +10,7 @@ const fields = {
   clientSecret: "fixture-secret",
   accessToken: "fixture-access",
   refreshToken: "fixture-refresh",
+  redirectUri: "https://fixture.test/trakt/callback",
 };
 
 afterEach(() => vi.unstubAllGlobals());
@@ -42,6 +43,7 @@ describe("Trakt credential import", () => {
         token_type: "Bearer",
         expires_at: 0,
         client_id: "fixture-client",
+        redirect_uri: fields.redirectUri,
         api_version: "2",
       },
       scopes: [],
@@ -49,17 +51,29 @@ describe("Trakt credential import", () => {
     });
   });
 
-  it.each(["clientId", "clientSecret", "accessToken", "refreshToken"])(
-    "refuses missing %s before contacting Trakt",
-    async (name) => {
-      const fetch = vi.fn();
-      vi.stubGlobal("fetch", fetch);
-      await expect(
-        method.exchangeCredentials({ ...fields, [name]: "" }),
-      ).rejects.toThrow("Provide a valid Trakt");
-      expect(fetch).not.toHaveBeenCalled();
-    },
-  );
+  it.each([
+    "clientId",
+    "clientSecret",
+    "accessToken",
+    "refreshToken",
+    "redirectUri",
+  ])("refuses missing %s before contacting Trakt", async (name) => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      method.exchangeCredentials({ ...fields, [name]: "" }),
+    ).rejects.toThrow("Provide a valid Trakt");
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it("refuses a relative redirect URI before contacting Trakt", async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    await expect(
+      method.exchangeCredentials({ ...fields, redirectUri: "/callback" }),
+    ).rejects.toThrow("exact absolute redirect URI");
+    expect(fetch).not.toHaveBeenCalled();
+  });
 
   it.each(["with whitespace", "header\r\ninjection", "x".repeat(4097)])(
     "rejects unusable credential input without sending it",
