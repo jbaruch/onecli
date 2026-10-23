@@ -1,0 +1,2 @@
+# Required by Rust include_str!; canonical bytes are checked against the TS catalog.
+apps/gateway/crates/policy-engine/src/catalog.generated.json linguist-generated=true merge=ours

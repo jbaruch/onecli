@@ -221,7 +221,24 @@ const expectedVerdicts = (
           ? JSON.stringify({ query: "query { oc-any }" })
           : tool.graphqlOps === "mutation"
             ? JSON.stringify({ query: "mutation { oc-any }" })
-            : undefined;
+            : tool.googleWriteOps
+              ? JSON.stringify(
+                  provider === "google-calendar"
+                    ? {
+                        status:
+                          tool.googleWriteOps === "ordinary"
+                            ? "confirmed"
+                            : "cancelled",
+                      }
+                    : {
+                        addLabelIds: [
+                          tool.googleWriteOps === "ordinary"
+                            ? "UNREAD"
+                            : "TRASH",
+                        ],
+                      },
+                )
+              : undefined;
       for (const variant of allRuleVariants(tool)) {
         const outcome: PolicyOutcome = evaluatePolicyOutcome(rules, {
           host,
@@ -465,6 +482,81 @@ describe("the agreement law (per-tool verdicts ≡ the evaluator)", () => {
     });
     expect(actual).toEqual(expected);
   });
+
+  it.each([
+    {
+      provider: "gmail",
+      ordinary: ["modify_message", "modify_thread", "batch_modify_messages"],
+      destructive: ["trash_message", "trash_thread", "batch_trash_messages"],
+    },
+    {
+      provider: "google-calendar",
+      ordinary: ["update_event"],
+      destructive: ["delete_event"],
+    },
+  ])(
+    "$provider: the panel distinguishes ordinary updates from destructive permissions",
+    async ({ provider, ordinary, destructive }) => {
+      for (const verdict of ["approval", "block"] as const) {
+        const rules = [
+          simRow({
+            id: "r-ordinary",
+            logicalId: "ordinary",
+            action: "allow",
+            priority: 1,
+            targets: [
+              targetRow({
+                kind: "app",
+                appProvider: provider,
+                appTools: ["read_all", ...ordinary],
+              }),
+            ],
+          }),
+          simRow({
+            id: "r-destructive",
+            logicalId: "destructive",
+            action: verdict === "block" ? "block" : "allow",
+            requireApproval: verdict === "approval",
+            priority: 2,
+            targets: [
+              targetRow({
+                kind: "app",
+                appProvider: provider,
+                appTools: destructive,
+              }),
+            ],
+          }),
+          simRow({
+            id: "r-terminal",
+            logicalId: "terminal",
+            action: "block",
+            priority: 3,
+            targets: [targetRow({ kind: "app", appProvider: provider })],
+          }),
+        ];
+        armStubs({ workspaceRows: rules });
+        const result = await effectiveAppPermissions(
+          { provider, agentId: "agent-1" },
+          WORKSPACE_CTX,
+        );
+        const actual = new Map(
+          result.groups.flatMap((g) =>
+            g.tools.map((t) => [t.toolId, t.verdict]),
+          ),
+        );
+        for (const tool of ordinary)
+          expect(actual.get(tool), tool).toBe("allow");
+        for (const tool of destructive)
+          expect(actual.get(tool), tool).toBe(verdict);
+        for (const tool of result.groups.find((g) => g.category === "read")!
+          .tools)
+          expect(tool.verdict, tool.toolId).toBe("allow");
+        expect(actual).toEqual(
+          expectedVerdicts(provider, rules, { hasInjections: false }),
+        );
+      }
+    },
+  );
 
   it("mixed: a method-scoped network block splits a multi-method tool", async () => {
     // jira `search_issues` is GET+POST; block only the POST face.
