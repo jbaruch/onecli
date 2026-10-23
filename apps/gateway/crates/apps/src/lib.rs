@@ -3119,6 +3119,32 @@ pub async fn refresh_access_token(
     stored_token_url: Option<&str>,
     stored_redirect_uri: Option<&str>,
 ) -> anyhow::Result<(String, i64, Option<String>)> {
+    refresh_access_token_with_clock(
+        config,
+        refresh_token,
+        byoc_client_id,
+        byoc_client_secret,
+        stored_token_url,
+        stored_redirect_uri,
+        || {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .expect("system clock before UNIX epoch")
+                .as_secs() as i64
+        },
+    )
+    .await
+}
+
+async fn refresh_access_token_with_clock(
+    config: &RefreshConfig,
+    refresh_token: &str,
+    byoc_client_id: Option<&str>,
+    byoc_client_secret: Option<&str>,
+    stored_token_url: Option<&str>,
+    stored_redirect_uri: Option<&str>,
+    now: fn() -> i64,
+) -> anyhow::Result<(String, i64, Option<String>)> {
     let client_id = match byoc_client_id {
         Some(id) => id.to_string(),
         None => std::env::var(config.client_id_env)
@@ -3175,12 +3201,7 @@ pub async fn refresh_access_token(
             .unwrap_or(3600),
     );
 
-    let now = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .expect("system clock before UNIX epoch")
-        .as_secs() as i64;
-
-    Ok((access_token, now + expires_in, new_refresh_token))
+    Ok((access_token, now() + expires_in, new_refresh_token))
 }
 
 #[derive(serde::Serialize)]
@@ -6929,24 +6950,22 @@ mod tests {
             stream.write_all(format!("HTTP/1.1 {status}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{response}",response.len()).as_bytes()).await.expect("response");
             complete
         });
-        let before = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .expect("clock")
-            .as_secs() as i64;
-        let result = refresh_access_token(
+        const FIXED_NOW: i64 = 1_800_000_000;
+        let result = refresh_access_token_with_clock(
             &config,
             "fixture-refresh",
             Some("fixture-client"),
             Some("fixture-secret"),
             None,
             Some("https://fixture.test/Exact/Callback"),
+            || FIXED_NOW,
         )
         .await
         .expect("complete request accepted");
         assert!(server.await.expect("server completed"));
         assert_eq!(result.0, "fixture-new-access");
         assert_eq!(result.2.as_deref(), Some("fixture-new-refresh"));
-        assert!(result.1 >= before + 604800);
+        assert_eq!(result.1, FIXED_NOW + 604800);
     }
 
     #[tokio::test]
